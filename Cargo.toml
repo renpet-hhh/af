@@ -8,6 +8,7 @@ repository = "https://github.com/yewstack/yew-trunk-minimal-template"
 license = "MIT OR Apache-2.0"
 keywords = ["af"]
 categories = ["logic", "argumentation"]
+homepage = "https://renpet-hhh.github.io/af/"
 
 [dependencies]
 yew = { version="0.20", features=["csr"] }
