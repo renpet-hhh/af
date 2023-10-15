@@ -12,3 +12,4 @@ homepage = "https://renpet-hhh.github.io/af/"
 
 [dependencies]
 yew = { version="0.20", features=["csr"] }
+varisat = "0.2.2"
