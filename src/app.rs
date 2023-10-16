@@ -17,12 +17,6 @@ pub fn app() -> Html {
         Attack::new(1, 0),
         Attack::new(2, 3),
         Attack::new(3, 2),
-        Attack::new(4, 4),
-        Attack::new(4, 1),
-        Attack::new(5, 0),
-        Attack::new(5, 6),
-        Attack::new(6, 7),
-        Attack::new(7, 5)
     ]);
     html! {
         <main>
@@ -30,6 +24,8 @@ pub fn app() -> Html {
             <button onclick={onclick}>{ "Click" }</button>
             <p>{ format!("AF: {:?}", framework) }</p>
             <p>{ format!("Complete: {:?}", framework.complete()) }</p>
+            <p>{ format!("Stable: {:?}", framework.stable()) }</p>
+            <p>{ format!("Preferred: {:?}", framework.preferred()) }</p>
         </main>
     }
 }

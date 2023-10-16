@@ -11,5 +11,7 @@ pub enum Acceptability {
 pub struct Labelling(pub Vec<Acceptability>);
 
 pub trait Semantics {
-    fn complete(self) -> Vec<Labelling>;
+    fn complete(&self) -> Vec<Labelling>;
+    fn stable(&self) -> Vec<Labelling>;
+    fn preferred(&self) -> Vec<Labelling>;
 }
