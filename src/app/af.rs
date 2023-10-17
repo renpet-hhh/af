@@ -1,7 +1,8 @@
-use std::fmt::Debug;
+use std::{collections::HashMap, fmt::Debug};
 pub mod semantics;
 use semantics::Acceptability::{IN, OUT, UNDEC};
 use varisat::{CnfFormula, ExtendFormula, Lit, Var};
+use web_sys::File;
 
 use self::semantics::Labelling;
 
@@ -19,10 +20,38 @@ impl Attack {
     }
 }
 
-#[derive(Debug)]
 pub struct AF {
     num_of_args: usize,
     attacks: Vec<Attack>,
+    names: Option<HashMap<String, usize>>,
+}
+
+impl Debug for AF {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut binding = f.debug_struct("AF");
+        let n: usize = self.num_of_args;
+        let names_by_index: Option<Vec<&str>> = self.names_by_index();
+        binding.field("num_of_args", &n);
+        match names_by_index {
+            Some(names_by_index) => {
+                return binding
+                    .field(
+                        "attacks",
+                        &self
+                            .attacks
+                            .iter()
+                            .map(|att| {
+                                let Attack { origin, target } = att;
+
+                                (names_by_index.get(*origin), names_by_index.get(*target))
+                            })
+                            .collect::<Vec<_>>(),
+                    )
+                    .finish();
+            }
+            None => binding.field("attacks", &self.attacks).finish(),
+        }
+    }
 }
 
 impl semantics::Semantics for AF {
@@ -109,6 +138,15 @@ impl AF {
                 None => 0,
             },
             attacks,
+            names: None,
+        }
+    }
+
+    pub fn new_named(attacks: Vec<Attack>, names: HashMap<String, usize>) -> AF {
+        AF {
+            num_of_args: names.len(),
+            attacks,
+            names: Some(names),
         }
     }
 
@@ -228,7 +266,77 @@ impl AF {
 
     fn add_not_empty_clause(&self, formula: &mut Formula) {
         formula.cnf.add_clause(
-            &formula.vars.i.iter().map(|v| v.positive()).collect::<Vec<Lit>>()
+            &formula
+                .vars
+                .i
+                .iter()
+                .map(|v| v.positive())
+                .collect::<Vec<Lit>>(),
         )
+    }
+
+    pub async fn from_file<'a>(file: File) -> AF {
+        let content = wasm_bindgen_futures::JsFuture::from(file.text()).await;
+        let empty = AF::new(vec![]);
+        match content {
+            Err(_) => empty,
+            Ok(content) => {
+                if let Some(text) = content.as_string() {
+                    let mut names = HashMap::new();
+                    let mut attacks = vec![];
+                    for line in text.lines() {
+                        if line.is_empty() || line.starts_with('#') {
+                            continue;
+                        }
+
+                        let start = line.find('(');
+                        let end = line.find(')');
+                        if let Some(start) = start {
+                            if let Some(end) = end {
+                                let before = &line[..start];
+                                let center = &line[start + 1..end];
+                                match before {
+                                    "arg" => {
+                                        names.insert(center.to_owned(), names.len());
+                                        continue;
+                                    }
+                                    "att" => {
+                                        let parts = center.split(',').collect::<Vec<_>>();
+                                        if let [origin, target] = parts[..] {
+                                            let origin = names.get(origin);
+
+                                            let target = names.get(target);
+
+                                            if let Some(&origin) = origin {
+                                                if let Some(&target) = target {
+                                                    attacks.push(Attack { origin, target });
+                                                }
+                                            }
+                                        }
+                                        continue;
+                                    }
+                                    _ => continue,
+                                }
+                            }
+                        }
+                    }
+                    return AF::new_named(attacks, names);
+                }
+                empty
+            }
+        }
+    }
+
+    fn names_by_index(&self) -> Option<Vec<&str>> {
+        match &self.names {
+            Some(names) => {
+                let mut by_index = vec!["null"; self.num_of_args];
+                for (name, &i) in names {
+                    by_index[i] = &name;
+                }
+                Some(by_index)
+            }
+            None => None,
+        }
     }
 }

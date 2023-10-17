@@ -22,6 +22,9 @@ name = "af"
 version = "0.1.0"
 dependencies = [
  "varisat",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
  "yew",
 ]
 
