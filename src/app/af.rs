@@ -2,7 +2,8 @@ use std::{collections::HashMap, fmt::Debug};
 pub mod semantics;
 use semantics::Acceptability::{IN, OUT, UNDEC};
 use varisat::{CnfFormula, ExtendFormula, Lit, Var};
-use web_sys::File;
+use wasm_bindgen::JsValue;
+use web_sys::{File, console};
 
 use self::semantics::Labelling;
 
@@ -43,7 +44,10 @@ impl Debug for AF {
                             .map(|att| {
                                 let Attack { origin, target } = att;
 
-                                (names_by_index.get(*origin), names_by_index.get(*target))
+                                (
+                                    names_by_index.get(*origin).unwrap_or(&"null"),
+                                    names_by_index.get(*target).unwrap_or(&"null"),
+                                )
                             })
                             .collect::<Vec<_>>(),
                     )
@@ -176,12 +180,13 @@ impl AF {
     }
 
     fn attacker_map(&self) -> Vec<Vec<usize>> {
+        let n = self.num_of_args;
         let mut result = vec![];
-        for arg in 0..self.num_of_args {
+        for arg in 0..n {
             let mut attackers = vec![];
             for Attack { origin, target } in &self.attacks {
                 if *target == arg {
-                    attackers.push(*origin)
+                    attackers.push(*origin);
                 }
             }
             result.push(attackers);
@@ -211,48 +216,48 @@ impl AF {
         } = vars;
 
         /*
-            Section 3.1 http://www.mthimm.de/pub/2020/Klein_2020.pdf
             Definition 5 https://arxiv.org/pdf/1310.4986.pdf
             C_in  <-> are the set of clauses (3) and (4)
             C_out <-> are the set of clauses (5) and (6)
         */
-        // (1)
+        let attacker_map = self.attacker_map();
         for i in 0..n {
+            // (1)
             cnf.add_clause(&[inn[i].positive(), out[i].positive(), und[i].positive()]);
             cnf.add_clause(&[inn[i].negative(), out[i].negative()]);
             cnf.add_clause(&[inn[i].negative(), und[i].negative()]);
             cnf.add_clause(&[out[i].negative(), und[i].negative()]);
-        }
-        let attacker_map = self.attacker_map();
-        for i in 0..n {
+
             let attackers = &attacker_map[i];
             // (2)
             if attackers.is_empty() {
-                cnf.add_clause(&[inn[i].positive(), out[i].negative(), und[i].negative()]);
+                cnf.add_clause(&[inn[i].positive()]);
+                cnf.add_clause(&[out[i].negative()]);
+                cnf.add_clause(&[und[i].negative()]);
                 continue;
             }
             // (3)
-            for &j in attackers {
-                cnf.add_clause(&[inn[i].negative(), out[j].positive()]);
-            }
-            // (4)
-            let mut clause4 = attackers
+            let mut clause3 = attackers
                 .iter()
                 .map(|&j| out[j].negative())
                 .collect::<Vec<Lit>>();
-            clause4.push(inn[i].positive());
-            cnf.add_clause(&clause4);
+            clause3.push(inn[i].positive());
+            cnf.add_clause(&clause3);
+            // (4)
+            for &j in attackers {
+                cnf.add_clause(&[inn[i].negative(), out[j].positive()]);
+            }
             // (5)
-            let mut clause5 = attackers
-                .iter()
-                .map(|&j| inn[j].positive())
-                .collect::<Vec<Lit>>();
-            clause5.push(out[i].negative());
-            cnf.add_clause(&clause5);
-            // (6)
             for &j in attackers {
                 cnf.add_clause(&[inn[j].negative(), out[i].positive()]);
             }
+            // (6)
+            let mut clause6 = attackers
+                .iter()
+                .map(|&j| inn[j].positive())
+                .collect::<Vec<Lit>>();
+            clause6.push(out[i].negative());
+            cnf.add_clause(&clause6);
         }
     }
 

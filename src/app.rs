@@ -11,9 +11,6 @@ use self::af::AF;
 fn default_af() -> AF {
     af::AF::new(vec![
         Attack::new(0, 1),
-        Attack::new(1, 0),
-        Attack::new(2, 3),
-        Attack::new(3, 2),
     ])
 }
 
