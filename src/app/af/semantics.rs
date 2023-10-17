@@ -7,7 +7,7 @@ pub enum Acceptability {
     UNDEC,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Labelling(pub Vec<Acceptability>);
 
 pub trait Semantics {

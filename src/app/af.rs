@@ -2,28 +2,18 @@ use std::{collections::HashMap, fmt::Debug};
 pub mod semantics;
 use semantics::Acceptability::{IN, OUT, UNDEC};
 use varisat::{CnfFormula, ExtendFormula, Lit, Var};
-use wasm_bindgen::JsValue;
-use web_sys::{File, console};
+use web_sys::File;
 
 use self::semantics::Labelling;
 
 use super::sat::{CnfFormulaExtension, Formula, Vars, SAT};
 
 #[derive(Debug)]
-pub struct Attack {
-    origin: usize,
-    target: usize,
-}
-
-impl Attack {
-    pub fn new(origin: usize, target: usize) -> Attack {
-        Attack { origin, target }
-    }
-}
+pub struct Attack(pub usize, pub usize);
 
 pub struct AF {
-    num_of_args: usize,
-    attacks: Vec<Attack>,
+    pub num_of_args: usize,
+    pub attacks: Vec<Attack>,
     names: Option<HashMap<String, usize>>,
 }
 
@@ -42,7 +32,7 @@ impl Debug for AF {
                             .attacks
                             .iter()
                             .map(|att| {
-                                let Attack { origin, target } = att;
+                                let Attack(origin, target) = att;
 
                                 (
                                     names_by_index.get(*origin).unwrap_or(&"null"),
@@ -135,7 +125,10 @@ impl AF {
      * The framework has arguments 0, 1, ..., max; where max is the highest number in `attacks`
      */
     pub fn new(attacks: Vec<Attack>) -> AF {
-        let max = attacks.iter().flat_map(|a| [a.origin, a.target]).max();
+        let max = attacks
+            .iter()
+            .flat_map(|Attack (origin, target)| vec![origin, target])
+            .max(); 
         AF {
             num_of_args: match max {
                 Some(x) => x + 1,
@@ -184,7 +177,7 @@ impl AF {
         let mut result = vec![];
         for arg in 0..n {
             let mut attackers = vec![];
-            for Attack { origin, target } in &self.attacks {
+            for Attack(origin, target) in &self.attacks {
                 if *target == arg {
                     attackers.push(*origin);
                 }
@@ -314,7 +307,7 @@ impl AF {
 
                                             if let Some(&origin) = origin {
                                                 if let Some(&target) = target {
-                                                    attacks.push(Attack { origin, target });
+                                                    attacks.push(Attack ( origin, target ));
                                                 }
                                             }
                                         }
@@ -332,7 +325,7 @@ impl AF {
         }
     }
 
-    fn names_by_index(&self) -> Option<Vec<&str>> {
+    pub fn names_by_index(&self) -> Option<Vec<&str>> {
         match &self.names {
             Some(names) => {
                 let mut by_index = vec!["null"; self.num_of_args];

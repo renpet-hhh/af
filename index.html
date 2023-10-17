@@ -1,8 +1,59 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <base data-trunk-public-url/>
-    <meta charset="utf-8" />
-    <title>AF</title>
-  </head>
+
+<head>
+  <base data-trunk-public-url />
+  <meta charset="utf-8" />
+  <title>AF</title>
+  <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <script>
+    /* Exported to glue.rs */
+    function updateVisNetwork(containerId, labels, attack_origin, attack_target, colors) {
+      // create an array with nodes
+      var nodes = new vis.DataSet(labels.map((label, id) => ({
+        id,
+        label,
+        color: {
+          background: colors[id]
+        }
+      })));
+
+      const num_of_attacks = attack_origin.length;
+      const attacks = [];
+      for (let i = 0; i < num_of_attacks; i++) {
+        attacks.push({ from: attack_origin[i], to: attack_target[i] });
+      }
+      // create an array with edges
+      var edges = new vis.DataSet(attacks);
+
+      // create a network
+      var container = document.getElementById(containerId);
+      if (!container) return;
+      var data = {
+        nodes: nodes,
+        edges: edges
+      };
+      var options = {
+        autoResize: true,
+        height: '512px',
+        width: '512px',
+        nodes: {
+          color: {
+            border: "black"
+          },
+          font: {
+            color: "white"
+          }
+        },
+        edges: {
+          arrows: {
+            to: true
+          }
+        },        // defined in the edges module.
+      }
+      var network = new vis.Network(container, data, options);
+    }
+  </script>
+</head>
+
 </html>
