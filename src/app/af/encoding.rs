@@ -40,7 +40,7 @@ impl Enconding {
                             }
                             continue;
                         }
-                        _ => continue,
+                        _ => return Enconding::ERROR(format!("Unrecognized {}", before))
                     }
                 }
             }
