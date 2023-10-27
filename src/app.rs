@@ -12,6 +12,7 @@ pub(crate) mod util;
 use crate::app::{
     af::{encoding::Enconding, semantics::Semantics, AF},
     components::file_input::FileInput,
+    components::preset::Presets,
     graph::VisDrawable,
     layout::Stack,
     util::read_file,
@@ -72,6 +73,15 @@ pub fn app() -> Html {
         })
     };
 
+    let load_preset = {
+        let vis_page = vis_page.clone();
+        let af_text_handle = af_text_handle.clone();
+        Callback::from(move |preset: &'static str| {
+            vis_page.set(0);
+            af_text_handle.set(preset.to_string());
+        })
+    };
+
     // Synchronize the network visualization
     framework.update_vis("af-graph", complete.get(*vis_page));
 
@@ -79,7 +89,10 @@ pub fn app() -> Html {
         <Stack vertical={true}>
             <Stack align_items="center">
                 <Stack vertical={true}>
-                    <FileInput id="load-af" text="Load AF" onload={load_af} />
+                    <Stack align_items="center">
+                        <FileInput id="load-af" text="Load AF" onload={load_af} />
+                        <Presets onselect={load_preset} />
+                    </Stack>
                     <textarea style="width: 512px; height: 512px;" ref={textarea_ref} value={af_text} onchange={handle_af_text_change} />
                 </Stack>
                 <Stack vertical={true}>
