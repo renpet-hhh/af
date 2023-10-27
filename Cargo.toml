@@ -11,7 +11,7 @@ categories = ["logic", "argumentation"]
 homepage = "https://renpet-hhh.github.io/af/"
 
 [dependencies]
-yew = { version="0.20", features=["csr"] }
+yew = { version="0.21", features=["csr"] }
 varisat = "0.2.2"
 wasm-bindgen-futures = "0.4.37"
 wasm-bindgen = "0.2.87"
