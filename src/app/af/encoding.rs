@@ -29,14 +29,14 @@ impl Enconding {
                     let center = &line[start + 1..end];
                     match before {
                         "arg" => {
-                            let label = center.to_owned();
+                            let label = center.trim().to_owned();
                             labels.push(label);
                             continue;
                         }
                         "att" => {
                             let parts = center.split(',').collect::<Vec<_>>();
                             if let [origin, target] = parts[..] {
-                                attacks.push((origin.to_owned(), target.to_owned()));
+                                attacks.push((origin.trim().to_owned(), target.trim().to_owned()));
                             }
                             continue;
                         }
