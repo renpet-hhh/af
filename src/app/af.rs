@@ -1,10 +1,10 @@
 use std::{collections::HashMap, fmt::Debug};
+pub mod encoding;
 pub mod semantics;
 use semantics::Acceptability::{IN, OUT, UNDEC};
 use varisat::{CnfFormula, ExtendFormula, Lit, Var};
-use web_sys::File;
 
-use self::semantics::Labelling;
+use self::{encoding::Enconding, semantics::Labelling};
 
 use super::sat::{CnfFormulaExtension, Formula, Vars, SAT};
 
@@ -127,8 +127,8 @@ impl AF {
     pub fn new(attacks: Vec<Attack>) -> AF {
         let max = attacks
             .iter()
-            .flat_map(|Attack (origin, target)| vec![origin, target])
-            .max(); 
+            .flat_map(|Attack(origin, target)| vec![origin, target])
+            .max();
         AF {
             num_of_args: match max {
                 Some(x) => x + 1,
@@ -273,58 +273,6 @@ impl AF {
         )
     }
 
-    pub async fn from_file<'a>(file: File) -> AF {
-        let content = wasm_bindgen_futures::JsFuture::from(file.text()).await;
-        let empty = AF::new(vec![]);
-        match content {
-            Err(_) => empty,
-            Ok(content) => {
-                if let Some(text) = content.as_string() {
-                    let mut names = HashMap::new();
-                    let mut attacks = vec![];
-                    for line in text.lines() {
-                        if line.is_empty() || line.starts_with('#') {
-                            continue;
-                        }
-
-                        let start = line.find('(');
-                        let end = line.find(')');
-                        if let Some(start) = start {
-                            if let Some(end) = end {
-                                let before = &line[..start];
-                                let center = &line[start + 1..end];
-                                match before {
-                                    "arg" => {
-                                        names.insert(center.to_owned(), names.len());
-                                        continue;
-                                    }
-                                    "att" => {
-                                        let parts = center.split(',').collect::<Vec<_>>();
-                                        if let [origin, target] = parts[..] {
-                                            let origin = names.get(origin);
-
-                                            let target = names.get(target);
-
-                                            if let Some(&origin) = origin {
-                                                if let Some(&target) = target {
-                                                    attacks.push(Attack ( origin, target ));
-                                                }
-                                            }
-                                        }
-                                        continue;
-                                    }
-                                    _ => continue,
-                                }
-                            }
-                        }
-                    }
-                    return AF::new_named(attacks, names);
-                }
-                empty
-            }
-        }
-    }
-
     pub fn names_by_index(&self) -> Option<Vec<&str>> {
         match &self.names {
             Some(names) => {
@@ -335,6 +283,29 @@ impl AF {
                 Some(by_index)
             }
             None => None,
+        }
+    }
+}
+
+impl From<Enconding> for AF {
+    fn from(enc: Enconding) -> Self {
+        match enc {
+            Enconding::SIMPLE(labels, attacks) => {
+                let mut att = vec![];
+                let mut index_by_label: HashMap<String, usize> = HashMap::new();
+                for (i, label) in labels.iter().enumerate() {
+                    index_by_label.insert(label.to_owned(), i);
+                }
+                for (origin, target) in attacks {
+                    if let Some(&origin_i) = index_by_label.get(&origin) {
+                        if let Some(&target_i) = index_by_label.get(&target) {
+                            att.push(Attack(origin_i, target_i));
+                        }
+                    }
+                }
+                AF::new_named(att, index_by_label)
+            }
+            Enconding::ERROR(_) => AF::new(vec![]),
         }
     }
 }

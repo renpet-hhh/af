@@ -1,12 +1,15 @@
-use web_sys::{File, HtmlInputElement};
+use web_sys::{File, HtmlInputElement, console};
 use yew::prelude::*;
 
 use crate::app::af::semantics::Semantics;
 use crate::app::graph::VisDrawable;
+use crate::app::util::read_file;
 mod af;
 mod glue;
 mod graph;
 mod sat;
+pub(crate) mod util;
+use crate::app::af::encoding::Enconding;
 use af::Attack;
 
 use self::af::AF;
@@ -38,8 +41,19 @@ pub fn app() -> Html {
             vis_page.set(0);
             if let Some(file) = get_file_from_event(ev) {
                 wasm_bindgen_futures::spawn_local(async move {
-                    let f = AF::from_file(file).await;
-                    framework.set(f);
+                    let text = read_file(file).await;
+                    if let Some(text) = text {
+                        let parsed = Enconding::parse_simple(text);
+                        match parsed {
+                            Enconding::ERROR(err) => {
+                                console::log_1(&js_sys::JsString::from(format!("Error in decode: {}", err)));
+                            },
+                            _ => {
+                                let af = AF::from(parsed);
+                                framework.set(af);
+                            }
+                        }
+                    }
                 });
             }
         })
