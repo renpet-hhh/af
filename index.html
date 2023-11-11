@@ -1,0 +1,91 @@
+<!DOCTYPE html><html><head>
+  <base href="/af/">
+  <meta charset="utf-8">
+  <title>AF</title>
+  <script src="https://kit.fontawesome.com/eeff0af4b7.js" crossorigin="anonymous"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto@1&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/af/tailwind-d849c3a49977127c.css">
+  
+  <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <script>
+    /* Exported to glue.rs */
+    function updateVisNetwork(containerId, labels, attack_origin, attack_target, colors) {
+      // create an array with nodes
+      var nodes = new vis.DataSet(labels.map((label, id) => ({
+        id,
+        label,
+        color: {
+          background: colors[id]
+        }
+      })));
+
+      const num_of_attacks = attack_origin.length;
+      const attacks = [];
+      for (let i = 0; i < num_of_attacks; i++) {
+        attacks.push({ from: attack_origin[i], to: attack_target[i] });
+      }
+      // create an array with edges
+      var edges = new vis.DataSet(attacks);
+
+      // create a network
+      var container = document.getElementById(containerId);
+      if (!container) return;
+      var data = {
+        nodes: nodes,
+        edges: edges
+      };
+      var options = {
+        autoResize: true,
+        height: '512px',
+        width: '512px',
+        nodes: {
+          color: {
+            border: "black"
+          },
+          font: {
+            color: "white"
+          }
+        },
+        edges: {
+          arrows: {
+            to: true
+          }
+        },        // defined in the edges module.
+      }
+      var network = new vis.Network(container, data, options);
+    }
+  </script>
+
+<link rel="preload" href="/af/af-bd38abc8b69aee2_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
+<link rel="modulepreload" href="/af/af-bd38abc8b69aee2.js"></head>
+
+<body><script type="module">import init from '/af/af-bd38abc8b69aee2.js';init('/af/af-bd38abc8b69aee2_bg.wasm');</script><script>(function () {
+    var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    var url = protocol + '//' + window.location.host + '/_trunk/ws';
+    var poll_interval = 5000;
+    var reload_upon_connect = () => {
+        window.setTimeout(
+            () => {
+                // when we successfully reconnect, we'll force a
+                // reload (since we presumably lost connection to
+                // trunk due to it being killed, so it will have
+                // rebuilt on restart)
+                var ws = new WebSocket(url);
+                ws.onopen = () => window.location.reload();
+                ws.onclose = reload_upon_connect;
+            },
+            poll_interval);
+    };
+
+    var ws = new WebSocket(url);
+    ws.onmessage = (ev) => {
+        const msg = JSON.parse(ev.data);
+        if (msg.reload) {
+            window.location.reload();
+        }
+    };
+    ws.onclose = reload_upon_connect;
+})()
+</script></body></html>
