@@ -27,4 +27,5 @@ features = [
     "MouseEvent",
     "DomRect",
     "HtmlTextAreaElement",
+    "HtmlSelectElement",
 ]

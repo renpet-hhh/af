@@ -1,20 +1,23 @@
-use web_sys::{File, HtmlTextAreaElement};
+use wasm_bindgen::JsValue;
+use web_sys::{File, HtmlTextAreaElement, console::log_1};
 use yew::prelude::*;
 
 mod af;
 mod components;
 mod glue;
 mod graph;
-mod layout;
 mod sat;
-pub(crate) mod util;
+mod util;
 
 use crate::app::{
-    af::{encoding::Enconding, semantics::Semantics, AF},
+    af::{
+        encoding::Enconding,
+        semantics::{Semantics, SemanticsType},
+        AF,
+    },
     components::file_input::FileInput,
-    components::preset::Presets,
+    components::{preset::Presets, select::Select},
     graph::VisDrawable,
-    layout::Stack,
     util::read_file,
 };
 
@@ -25,8 +28,10 @@ pub fn app() -> Html {
     let af_text = (*af_text_handle).clone();
     let parsed = Enconding::parse_simple(af_text.clone());
     let framework = AF::from(parsed);
+    let semantics_type = use_state(|| SemanticsType::COMPLETE);
     let vis_page = use_state(|| 0);
-    let complete = framework.complete();
+    let semantics = framework.get_semantics(*semantics_type);
+    
 
     let load_af = {
         let af_text_handle = af_text_handle.clone();
@@ -65,7 +70,7 @@ pub fn app() -> Html {
 
     let next_page = {
         let vis_page = vis_page.clone();
-        let num_of_pages = complete.len();
+        let num_of_pages = semantics.len();
         Callback::from(move |_: MouseEvent| {
             if *vis_page < num_of_pages - 1 {
                 vis_page.set(*vis_page + 1);
@@ -83,30 +88,45 @@ pub fn app() -> Html {
     };
 
     // Synchronize the network visualization
-    framework.update_vis("af-graph", complete.get(*vis_page));
+    framework.update_vis("af-graph", semantics.get(*vis_page));
+    let flex_row = util::flex_row();
+    let flex_col = util::flex_col();
 
     html! {
-        <Stack vertical={true}>
-            <Stack align_items="center">
-                <Stack vertical={true}>
-                    <Stack align_items="center">
+        <div class={classes!(flex_col.clone())}>
+            <div class={classes!(flex_row.clone())}>
+                <div class={classes!(flex_col.clone())}>
+                    <div class={classes!(flex_row.clone())}>
                         <FileInput id="load-af" text="Load AF" onload={load_af} />
                         <Presets onselect={load_preset} />
-                    </Stack>
-                    <textarea style="width: 512px; height: 512px;" ref={textarea_ref} value={af_text} onchange={handle_af_text_change} />
-                </Stack>
-                <Stack vertical={true}>
-                    <Stack>
-                        <button onclick={prev_page}>{ "Previous" }</button>
-                        <button onclick={next_page}>{ "Next" }</button>
-                    </Stack>
+                    </div>
+                    <textarea class={
+                        classes!("w-48", "h-64", "p-2", "border-2", "border-r-emerald-900", "border-solid", "resize-none")
+                    } ref={textarea_ref} value={af_text} onchange={handle_af_text_change} />
+                </div>
+                <div class={classes!(flex_col)}>
+                    <div class={classes!(flex_row.clone())}>
+                        <i onclick={prev_page} class={classes!("fa-solid", "fa-arrow-left", "cursor-pointer")}></i>
+                        <p>{ format!("{}/{}", 1 + *vis_page, semantics.len()) }</p>
+                        <i onclick={next_page} class={classes!("fa-solid", "fa-arrow-right", "cursor-pointer")}></i>
+                    </div>
                     <div style="border: 2px solid black;width:512px;height:512px;" id="af-graph"></div>
-                </Stack>
-            </Stack>
-            <p>{ format!("AF: {:?}", framework) }</p>
-            <p>{ format!("Complete: {:?}", complete) }</p>
-            <p>{ format!("Stable: {:?}", framework.stable()) }</p>
-            <p>{ format!("Preferred: {:?}", framework.preferred()) }</p>
-        </Stack>
+                    <div class={classes!(flex_row.clone())}>
+                        <label>{ "Semantics:" }</label>
+                        <Select<SemanticsType>
+                            onchange={{
+                                let semantics_type = semantics_type.clone();
+                                Callback::from(move |s| semantics_type.set(s))
+                            }}
+                            current={*semantics_type}
+                            options={vec![
+                                SemanticsType::COMPLETE,
+                                SemanticsType::PREFERRED,
+                                SemanticsType::STABLE,
+                            ]} />
+                    </div>
+                </div>
+            </div>
+        </div>
     }
 }

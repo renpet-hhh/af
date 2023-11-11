@@ -1,2 +1,7 @@
 [build]
 public_url = "/af/"
+
+
+stage = "build"
+command = "tailwindcss"
+command_arguments = ["-i", "input.css", "-o", "$TRUNK_STAGING_DIR/tailwind.css"]

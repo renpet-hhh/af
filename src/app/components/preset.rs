@@ -1,4 +1,3 @@
-use crate::app::components::button::Button;
 use yew::function_component;
 use yew::prelude::*;
 
@@ -123,7 +122,7 @@ att(A1,A14).
 pub fn Presets(props: &PresetsProps) -> Html {
     html! {
         <>
-            <p style="margin-left: 2rem;">{ "Presets:" }</p>
+            <p class={classes!("ml-2")}>{ "Presets:" }</p>
             {
                 (0..PRESETS.len()).map(|i| {
                     let handle_click = {
@@ -133,7 +132,10 @@ pub fn Presets(props: &PresetsProps) -> Html {
                         })
                     };
                     html! {
-                        <Button key={i} onclick={handle_click}>{ i }</Button>
+                        <button key={i} onclick={handle_click}
+                            class={
+                                classes!("m-1", "p-2", "bg-teal-600", "text-stone-100", "rounded")
+                            }>{ i }</button>
                     }
                 }).collect::<Html>()
             }

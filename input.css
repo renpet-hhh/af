@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+
+body {
+  font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+@tailwind utilities;

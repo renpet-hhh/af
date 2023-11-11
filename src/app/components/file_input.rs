@@ -11,7 +11,6 @@ pub struct FileInputProps {
 
 #[function_component]
 pub fn FileInput(props: &FileInputProps) -> Html {
-
     let input_ref = use_node_ref();
 
     let handle_change = {
@@ -36,9 +35,10 @@ pub fn FileInput(props: &FileInputProps) -> Html {
                 ref={input_ref}
                 type="file"
                 onchange={handle_change}
-                style="display: none;"
+                class={classes!("hidden")}
             />
-            <label for={props.id.clone()}>{ props.text.clone() }</label>
+            <label for={props.id.clone()}
+                class={classes!("m-2", "p-3", "bg-emerald-700", "rounded", "text-stone-100", "cursor-pointer")}>{ props.text.clone() }</label>
         </>
     }
 }
